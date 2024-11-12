@@ -21,8 +21,10 @@ Carto_pollutions <- function(){
 # on sauve le fichier
 if (!file.exists("Data/Stations.Rdata")){
       Stations <- get_hydrobio_stations_hydrobio(code_region="53") 
-      save(Stations,file="../data/Stations.Rdata")
-    }
+      save(Stations,file="Data/Stations.Rdata")
+}  else {
+    load("Data/Stations.Rdata")
+  }
 colnames(Stations)[1] <- "cdstation"
 Stations <- Stations[,1:11]
 stations_geo <- Stations %>% 
