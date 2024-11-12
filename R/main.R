@@ -62,7 +62,7 @@ Pollutions_2024 <- filter(Acartographier,!is.na(Acartographier$remarques2024)) %
  
 #enregistrement de la carte
   mapshot(m, url = paste0(getwd(), "/Cartographie/map.html"))
-  #affichage
+#affichage
   browseURL("Cartographie/map.html")
 
 }
