@@ -3,6 +3,7 @@ library(sf)
 library(mapview)
 library(tidyverse)
 library(stringr)
+# carto des stations... on en aura peut etre besoin
 Carto_stations <- function(){
   if (!exists("Stations", environment())){
     Stations <- get_hydrobio_stations_hydrobio(code_region="53") 
