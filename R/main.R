@@ -1,8 +1,3 @@
-library(hubeau)
-library(sf)
-library(mapview)
-library(tidyverse)
-library(stringr)
 
 #' Title
 #'
@@ -17,6 +12,12 @@ library(stringr)
 #' Carto_pollutions()
 #' 
 Carto_pollutions <- function(){
+  library(hubeau)
+  library(sf)
+  library(mapview)
+  library(tidyverse)
+  library(stringr)
+  
   # pour ne pas se recoltiner l'appel à hubeau on charge une fois les stations DCE et 
   # on sauve le fichier
   if (!file.exists("Data/Stations.Rdata")){
@@ -58,17 +59,17 @@ Carto_pollutions <- function(){
   
   #carto         
   mapviewOptions(basemaps = c( "OpenStreetMap.DE"))
- # mapview(Stations_DCE,col.regions="black",cex=1.5, label = "libelle_station_hydrobio")+
-   
-     mapview::mapview(Pollutions_2023, label = "libelle_station_hydrobio",col.regions='blue') +
-    mapview::mapview(Pollutions_2024, label = "libelle_station_hydrobio",col.regions='green')
+ m= mapview(Stations_DCE,col.regions="black",cex=1.5, label = "libelle_station_hydrobio")+
+   # le rajout des stations DCE peut allourdir la carte, a voir
+   mapview::mapview(Pollutions_2023, label = "libelle_station_hydrobio",col.regions='blue') +
+   mapview::mapview(Pollutions_2024, label = "libelle_station_hydrobio",col.regions='green')
 
   
   
   #enregistrement de la carte
   #creer le dossier s'il n'existe pas
   if(!dir.exists("Cartographie")){
-    dir.create("Cartographie")
+     dir.create("Cartographie")
   }
   mapshot(m, url = paste0(getwd(), "/Cartographie/map.html"))
   #affichage
