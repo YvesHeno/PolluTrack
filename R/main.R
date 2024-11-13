@@ -58,13 +58,18 @@ Carto_pollutions <- function(){
   
   #carto         
   mapviewOptions(basemaps = c( "OpenStreetMap.DE"))
-  mapview(Stations_DCE,col.regions="grey",cex=3,alpha=1, label = "libelle_station_hydrobio")+
-    mapview::mapview(Pollutions_2023, label = "libelle_station_hydrobio",col.regions='blue') +
+ # mapview(Stations_DCE,col.regions="black",cex=1.5, label = "libelle_station_hydrobio")+
+   
+     mapview::mapview(Pollutions_2023, label = "libelle_station_hydrobio",col.regions='blue') +
     mapview::mapview(Pollutions_2024, label = "libelle_station_hydrobio",col.regions='green')
 
   
   
   #enregistrement de la carte
+  #creer le dossier s'il n'existe pas
+  if(!dir.exists("Cartographie")){
+    dir.create("Cartographie")
+  }
   mapshot(m, url = paste0(getwd(), "/Cartographie/map.html"))
   #affichage
   browseURL("Cartographie/map.html")
