@@ -1,0 +1,66 @@
+---
+title: "Essai_python_R"
+author: "YMH"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,comment=NA)
+library(hubeau)
+library(sf)
+library(mapview)
+library(reticulate)
+library(ggplot2)
+library(data.table)
+library(dplyr)
+py_discover_config()
+source('../R/recup_stations.R')
+```
+
+## du python
+
+
+
+```{python recup_donnees}
+
+from grist_api import GristDocAPI
+import os
+
+import pandas as pd # pour convertir nos data en DF
+SERVER = "https://grist.numerique.gouv.fr"         # serveur
+DOC_ID = "vuefuBhD52XLjMfTZgQv2N"   #  id document (sur profil page grist)
+
+GRIST_API_KEY="b8311b0c86cbe25b3f76b2de4887c84c76f0a52b"
+api = GristDocAPI(DOC_ID, server=SERVER,api_key=GRIST_API_KEY)
+data = api.fetch_table('Stations_BZH')
+data = pd.DataFrame(data)
+
+
+```
+
+## Exploitation des données
+
+
+
+```{r impression_donnees}
+Pollutions <- py$data
+Taille <- dim(Pollutions)
+#les 2 premieres colonnes sont des colonnes créés par Rist, ne nous servent pas
+Pollutions <- Pollutions[,3:Taille[2]]
+Stations_DCE <- recup_stations()#on recupere les stations (Bretagne) à partir de Hubeau
+colnames(Stations_DCE)[1] <- "cdstation"
+Acartographier <- left_join(stations_DCE,Pollutions,by="cdstation")
+Pollutions_sans_station <- filter(Pollutions,Pollutions$cdstation=="0") %>% filter(X_L93!=0) %>% 
+    sf::st_as_sf(coords = c("X_L93", "Y_L93"), crs = 2154) 
+  #attribution de champ auto si pas de code station
+  Pollutions_sans_station$cdstation <- paste("pas de code station","/", Pollutions_sans_station$nom_station,"/",Pollutions_sans_station$commune)
+  
+  #on integre les geometries issues des stations ou des lieux de pollution
+  Acartographier <- dplyr::bind_rows(list(Acartographier,Pollutions_sans_station))
+#Donnees <- convertir_en_DF(Tableau,Nb_enregistrements)
+
+
+```
+
+
