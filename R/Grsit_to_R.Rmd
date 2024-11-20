@@ -16,6 +16,7 @@ library(data.table)
 library(dplyr)
 py_discover_config()
 source('../R/recup_stations.R')
+source('../R/Cartographie_pollutions.R')
 ```
 
 ## du python
@@ -43,14 +44,17 @@ data = pd.DataFrame(data)
 
 
 
-```{r impression_donnees}
+```{r traitement_donnees}
 Pollutions <- py$data
 Taille <- dim(Pollutions)
 #les 2 premieres colonnes sont des colonnes créés par Rist, ne nous servent pas
 Pollutions <- Pollutions[,3:Taille[2]]
-Stations_DCE <- recup_stations()#on recupere les stations (Bretagne) à partir de Hubeau
+#Stations_DCE <- recup_stations() la fct ne marche pas par appel
+# car le packae vctrs n'est pas a jour et je n'arrive pas à updtaer
+Stations_DCE <- load('../Data/Stations.Rdata')
+#on recupere les stations (Bretagne) à partir de Hubeau
 colnames(Stations_DCE)[1] <- "cdstation"
-Acartographier <- left_join(stations_DCE,Pollutions,by="cdstation")
+Acartographier <- left_join(Stations_DCE,Pollutions,by="cdstation")
 Pollutions_sans_station <- filter(Pollutions,Pollutions$cdstation=="0") %>% filter(X_L93!=0) %>% 
     sf::st_as_sf(coords = c("X_L93", "Y_L93"), crs = 2154) 
   #attribution de champ auto si pas de code station
@@ -60,6 +64,7 @@ Pollutions_sans_station <- filter(Pollutions,Pollutions$cdstation=="0") %>% filt
   Acartographier <- dplyr::bind_rows(list(Acartographier,Pollutions_sans_station))
 #Donnees <- convertir_en_DF(Tableau,Nb_enregistrements)
 
+  Cartographie_pollutions(Acartographier,Stations_DCE)
 
 ```
 
