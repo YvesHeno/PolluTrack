@@ -1,5 +1,5 @@
 
-#' Title
+#' Cartographie des pollutions
 #'
 #' @return
 #' @export
@@ -21,11 +21,10 @@ Carto_pollutions <- function(){
   # pour ne pas se recoltiner l'appel à hubeau on charge une fois les stations DCE et 
   # on sauve le fichier
   if (!file.exists("Data/Stations.Rdata")){
-    Stations <- get_hydrobio_stations_hydrobio(code_region="53") 
+    Stations <- get_hydrobio_stations_hydrobio(code_region="53") #53 pour la Bretagne
     save(Stations,file="Data/Stations.Rdata")
   }  else {
-    load("Data/Stations.Rdata")
-  }
+    load("Data/Stations.Rdata")}
   colnames(Stations)[1] <- "cdstation"
   Stations <- Stations[,1:11]
   stations_geo <- Stations %>% 
@@ -64,6 +63,8 @@ Carto_pollutions <- function(){
    mapview::mapview(Pollutions_2023, label = "libelle_station_hydrobio",col.regions='blue') +
    mapview::mapview(Pollutions_2024, label = "libelle_station_hydrobio",col.regions='green')
 
+ #pour les popup rearder dans options de leaflet leafpop
+ # qd on a un objet mapview noté m, alors m@map est un objet leaflet
   
   
   #enregistrement de la carte
