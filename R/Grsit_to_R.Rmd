@@ -14,6 +14,8 @@ library(reticulate)
 library(ggplot2)
 library(data.table)
 library(dplyr)
+library(mapview)
+library(webshot)
 py_discover_config()
 source('../R/recup_stations.R')
 source('../R/Cartographie_pollutions.R')
@@ -49,9 +51,8 @@ Pollutions <- py$data
 Taille <- dim(Pollutions)
 #les 2 premieres colonnes sont des colonnes créés par Rist, ne nous servent pas
 Pollutions <- Pollutions[,3:Taille[2]]
-#Stations_DCE <- recup_stations() la fct ne marche pas par appel
+Stations_DCE <- recup_stations() #la fct ne marche pas par appel
 # car le packae vctrs n'est pas a jour et je n'arrive pas à updtaer
-Stations_DCE <- load('../Data/Stations.Rdata')
 #on recupere les stations (Bretagne) à partir de Hubeau
 colnames(Stations_DCE)[1] <- "cdstation"
 Acartographier <- left_join(Stations_DCE,Pollutions,by="cdstation")
@@ -64,7 +65,38 @@ Pollutions_sans_station <- filter(Pollutions,Pollutions$cdstation=="0") %>% filt
   Acartographier <- dplyr::bind_rows(list(Acartographier,Pollutions_sans_station))
 #Donnees <- convertir_en_DF(Tableau,Nb_enregistrements)
 
-  Cartographie_pollutions(Acartographier,Stations_DCE)
+ # Cartographie_pollutions(Acartographier,Stations_DCE)
+   
+  colnames(Stations_DCE)[1] <- "cdstation"
+##################################################################"      
+     
+      #on trie
+      Pollutions_2023 <- filter(Acartographier,!is.na(Acartographier$remarques2023)) %>% 
+        select(cdstation,libelle_station_hydrobio,remarques2023)
+      Pollutions_2024 <- filter(Acartographier,!is.na(Acartographier$remarques2024)) %>% 
+        select(cdstation,libelle_station_hydrobio,remarques2024)
+      #STEP 
+      WMS_steps <- "https://geobretagne.fr:443/geoserver/zoneouest/ows?SERVICE=WMS&REQUEST=GetCapabilities"
+      
+      #carto         
+      mapviewOptions(basemaps = c( "OpenStreetMap.DE"))
+      mapview(Stations_DCE,col.regions="black",cex=1.5, label = "libelle_station_hydrobio")+
+        # le rajout des stations DCE peut allourdir la carte, a voir
+        mapview::mapview(Pollutions_2023, label = "libelle_station_hydrobio",col.regions='blue') +
+        mapview::mapview(Pollutions_2024, label = "libelle_station_hydrobio",col.regions='green')
+      
+      #pour les popup rearder dans options de leaflet leafpop
+      # qd on a un objet mapview noté m, alors m@map est un objet leaflet
+     # leaflet(m@map)
+      
+      #enregistrement de la carte
+      #creer le dossier s'il n'existe pas
+      # if(!dir.exists("Cartographie")){
+      #   dir.create("Cartographie")
+      # }
+      # fichier_chemin <- paste0(getwd(), "/Cartographie/map.html")
+      # mapshot(m, url =fichier_chemin )
+      #affichage
 
 ```
 
