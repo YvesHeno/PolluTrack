@@ -15,10 +15,15 @@ library(ggplot2)
 library(data.table)
 library(dplyr)
 library(mapview)
+library(stringr)
 library(webshot)
+library(tidyverse)
+library(leaflet)
 py_discover_config()
 source('../R/recup_stations.R')
 source('../R/Cartographie_pollutions.R')
+source('../R/adresses_to_geometry.R')
+source('../R/Nettoyage_pollutions.R')
 ```
 
 ## du python
@@ -32,12 +37,18 @@ import os
 
 import pandas as pd # pour convertir nos data en DF
 SERVER = "https://grist.numerique.gouv.fr"         # serveur
-DOC_ID = "vuefuBhD52XLjMfTZgQv2N"   #  id document (sur profil page grist)
+
 
 GRIST_API_KEY="b8311b0c86cbe25b3f76b2de4887c84c76f0a52b"
+DOC_ID = "sHaXGtRyPh8oJDgUs3ygQM"   #  id document (sur profil page grist)
+
 api = GristDocAPI(DOC_ID, server=SERVER,api_key=GRIST_API_KEY)
-data = api.fetch_table('Stations_BZH')
-data = pd.DataFrame(data)
+data = api.fetch_table('Enregistrement_pollutions')
+data = pd.DataFrame(data) # il faut mieux convertir en dataframe dans le chunck python, 
+# en le faisant dans le chunk R ca donne un DF pas propre
+
+
+
 
 
 ```
@@ -47,45 +58,52 @@ data = pd.DataFrame(data)
 
 
 ```{r traitement_donnees}
-Pollutions <- py$data
-Taille <- dim(Pollutions)
-#les 2 premieres colonnes sont des colonnes créés par Rist, ne nous servent pas
-Pollutions <- Pollutions[,3:Taille[2]]
-Stations_DCE <- recup_stations() #la fct ne marche pas par appel
-# car le packae vctrs n'est pas a jour et je n'arrive pas à updtaer
-#on recupere les stations (Bretagne) à partir de Hubeau
+Pollutions <- py$data # récup du DF python en DF R
+
+#les 2 premieres colonnes sont des colonnes créés par GRist, ne nous servent pas
+Pollutions <- Nettoyage_pollutions(Pollutions)#toilettage + modifs
+#on recupere la géométrie à partir d'adresses exploitables
+Pollutionsavecadresses <- filter(Pollutions,(is.nan(X_WGS84_) & nchar(cdstation)!=8 & nchar(loc)>0))
+
+
+traitementadresse <- adresses_to_geometry(Pollutionsavecadresses)
+print('adresses non exploitables :')
+data.table::data.table(traitementadresse$defaut)
+
+Stations_DCE <- recup_stations()
+#on recupere les stations (Bretagne) à partir de Hubeau, avec une géométrie
 colnames(Stations_DCE)[1] <- "cdstation"
-Acartographier <- left_join(Stations_DCE,Pollutions,by="cdstation")
-Pollutions_sans_station <- filter(Pollutions,Pollutions$cdstation=="0") %>% filter(X_L93!=0) %>% 
-    sf::st_as_sf(coords = c("X_L93", "Y_L93"), crs = 2154) 
-  #attribution de champ auto si pas de code station
-  Pollutions_sans_station$cdstation <- paste("pas de code station","/", Pollutions_sans_station$nom_station,"/",Pollutions_sans_station$commune)
+Acartographier <- right_join(Stations_DCE,Pollutions, by="cdstation")
+Pollutions_avec_XY <- filter(Pollutions,nchar(Pollutions$cdstation)!=8) %>% filter(X_WGS84_!=0) %>% 
+    sf::st_as_sf(coords = c("X_WGS84_", "Y_WGS84_"), crs = 4326)
+
   
   #on integre les geometries issues des stations ou des lieux de pollution
-  Acartographier <- dplyr::bind_rows(list(Acartographier,Pollutions_sans_station))
+  Acartographier <- dplyr::bind_rows(list(traitementadresse$geometrie,Pollutions_avec_XY)) %>%
+    select(c(Date,Adresse,Commune,Type_de_pollution,Description_de_la_pollution,Cours_d_eau_impacte,Duree_de_la_pollution))
 #Donnees <- convertir_en_DF(Tableau,Nb_enregistrements)
 
  # Cartographie_pollutions(Acartographier,Stations_DCE)
    
   colnames(Stations_DCE)[1] <- "cdstation"
 ##################################################################"      
+  
+  
+  mapview(Stations_DCE)+mapview(Acartographier,label="Description_de_la_pollution",col.regions='green')
+  leaflet() %>% addTiles() %>% addCircleMarkers(data=Acartographier,popup =Acartographier$Description_de_la_pollution)
      
-      #on trie
-      Pollutions_2023 <- filter(Acartographier,!is.na(Acartographier$remarques2023)) %>% 
-        select(cdstation,libelle_station_hydrobio,remarques2023)
-      Pollutions_2024 <- filter(Acartographier,!is.na(Acartographier$remarques2024)) %>% 
-        select(cdstation,libelle_station_hydrobio,remarques2024)
-      #STEP 
-      WMS_steps <- "https://geobretagne.fr:443/geoserver/zoneouest/ows?SERVICE=WMS&REQUEST=GetCapabilities"
-      
-      #carto         
-      mapviewOptions(basemaps = c( "OpenStreetMap.DE"))
-      mapview(Stations_DCE,col.regions="black",cex=1.5, label = "libelle_station_hydrobio")+
-        # le rajout des stations DCE peut allourdir la carte, a voir
-        mapview::mapview(Pollutions_2023, label = "libelle_station_hydrobio",col.regions='blue') +
-        mapview::mapview(Pollutions_2024, label = "libelle_station_hydrobio",col.regions='green')
-      
-      #pour les popup rearder dans options de leaflet leafpop
+      # #STEP 
+      # WMS_steps <- "https://geobretagne.fr:443/geoserver/zoneouest/ows?SERVICE=WMS&REQUEST=GetCapabilities"
+      # #recupérer ICPE (STEP+ agri)
+      # 
+      # #carto         
+      # mapviewOptions(basemaps = c( "OpenStreetMap.DE"))
+      # mapview(Stations_DCE,col.regions="black",cex=1.5, label = "libelle_station_hydrobio")+
+      #   # le rajout des stations DCE peut allourdir la carte, a voir
+      #   mapview::mapview(Pollutions_2023, label = "libelle_station_hydrobio",col.regions='blue') +
+      #   mapview::mapview(Pollutions_2024, label = "libelle_station_hydrobio",col.regions='green')
+      # 
+      # #pour les popup rearder dans options de leaflet leafpop
       # qd on a un objet mapview noté m, alors m@map est un objet leaflet
      # leaflet(m@map)
       

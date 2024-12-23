@@ -1,11 +1,11 @@
 recup_stations <- function(){
   # pour ne pas se recoltiner l'appel à hubeau on charge une fois les stations DCE et 
   # on sauve le fichier
-  if (!file.exists("Data/Stations.Rdata")){
+  if (!file.exists("../Data/Stations.Rdata")){
     Stations <- get_hydrobio_stations_hydrobio(code_region="53") #53 pour la Bretagne
-    save(Stations,file="Data/Stations.Rdata")
+    save(Stations,file="../Data/Stations.Rdata")
   }  else {
-    load("Data/Stations.Rdata")}
+    load("../Data/Stations.Rdata")}
   colnames(Stations)[1] <- "cdstation"
   Stations <- Stations[,1:11]
   stations_geo <- Stations %>% 
