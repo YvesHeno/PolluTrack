@@ -1,5 +1,5 @@
 ---
-title: "Essai_python_R"
+title: "Cartographie des pollutions"
 author: "YMH"
 date: "`r Sys.Date()`"
 output: html_document
@@ -24,6 +24,7 @@ source('../R/recup_stations.R')
 source('../R/Cartographie_pollutions.R')
 source('../R/adresses_to_geometry.R')
 source('../R/Nettoyage_pollutions.R')
+source('../R/recup_donnees56.R')
 ```
 
 ## du python
@@ -91,10 +92,19 @@ Pollutions_avec_XY <- filter(Pollutions,nchar(Pollutions$cdstation)!=8) %>% filt
   colnames(Stations_DCE)[1] <- "cdstation"
 ##################################################################"      
   #recupérer et cartographier les pollutions de yannick chauvin
+  Pollutions_Yannick <- recup_donnees56()
   
-  mapview(Stations_DCE)+mapview(Acartographier,label="Description_de_la_pollution",col.regions='green')
-  leaflet() %>% addTiles() %>% addCircleMarkers(data=Acartographier,popup=Acartographier$Description_de_la_pollution)
   
+ # mapview(Stations_DCE)+
+  mapview(Pollutions_Yannick,label='Nature pollution',col.regions="orange")+
+    mapview(Acartographier,label="Description_de_la_pollution",col.regions='yellow')
+  
+  m <- mapview(Pollutions_Yannick,label='Nature pollution',col.regions="orange")+
+    mapview(Acartographier,label="Description_de_la_pollution",col.regions='yellow')
+  #leaflet() %>% addTiles() %>% addCircleMarkers(data=Acartographier,popup=Acartographier$Description_de_la_pollution)
+ mapshot(m, url  = '../Cartographie/cartopollution.html')
+  
+  # leaflet() %>% dTiles() %>% addCircleMarkers(data=Acartographier,popup=Acartographier$Description_de_la_pollution)
   
      
       # #STEP 
@@ -120,7 +130,3 @@ Pollutions_avec_XY <- filter(Pollutions,nchar(Pollutions$cdstation)!=8) %>% filt
       # fichier_chemin <- paste0(getwd(), "/Cartographie/map.html")
       # mapshot(m, url =fichier_chemin )
       #affichage
-
-```
-
-
