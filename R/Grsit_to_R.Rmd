@@ -33,9 +33,12 @@ source('../R/Nettoyage_pollutions.R')
 ```{python recup_donnees}
 
 from grist_api import GristDocAPI
+# au prealable installer le package grit_api avec python
+# sous console windows pip install grist_api
 import os
 
 import pandas as pd # pour convertir nos data en DF
+#installer package pandas de la meme maniere
 SERVER = "https://grist.numerique.gouv.fr"         # serveur
 
 
@@ -87,10 +90,12 @@ Pollutions_avec_XY <- filter(Pollutions,nchar(Pollutions$cdstation)!=8) %>% filt
    
   colnames(Stations_DCE)[1] <- "cdstation"
 ##################################################################"      
-  
+  #recupérer et cartographier les pollutions de yannick chauvin
   
   mapview(Stations_DCE)+mapview(Acartographier,label="Description_de_la_pollution",col.regions='green')
-  leaflet() %>% addTiles() %>% addCircleMarkers(data=Acartographier,popup =Acartographier$Description_de_la_pollution)
+  leaflet() %>% addTiles() %>% addCircleMarkers(data=Acartographier,popup=Acartographier$Description_de_la_pollution)
+  
+  
      
       # #STEP 
       # WMS_steps <- "https://geobretagne.fr:443/geoserver/zoneouest/ows?SERVICE=WMS&REQUEST=GetCapabilities"
